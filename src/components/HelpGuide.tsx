@@ -46,18 +46,70 @@ export function HelpGuide({ isOpen, onClose }: HelpGuideProps) {
               <Terminal className="w-4 h-4" /> SSH Tunnel
             </h3>
             <div className="space-y-3 text-xs text-slate-300">
-              <p>Creates a secure port forward through a jump host to reach the Opera server.</p>
+              <p>Creates a secure port forward through a jump host to reach the Opera server on the hotel's internal network.</p>
+              
               <div>
-                <p className="font-medium text-slate-200 mb-1">What you need from IT:</p>
-                <ul className="list-disc list-inside space-y-1 text-slate-400">
-                  <li><span className="text-green-300">SSH Host</span> — Public IP/hostname of the jump server (e.g., <code className="bg-slate-950 px-1 rounded">jump.hotel.com</code>)</li>
-                  <li><span className="text-green-300">SSH Port</span> — Usually <code className="bg-slate-950 px-1 rounded">22</code></li>
-                  <li><span className="text-green-300">Username</span> — Your SSH login (e.g., <code className="bg-slate-950 px-1 rounded">admin</code>)</li>
-                  <li><span className="text-green-300">SSH Key</span> — Your private key file (or password auth)</li>
-                </ul>
+                <p className="font-medium text-slate-200 mb-2">📋 What each field means:</p>
+                <div className="space-y-2 ml-2">
+                  <div>
+                    <p className="text-green-300 font-medium">SSH Host (Jump Server)</p>
+                    <p className="text-slate-400 ml-4">
+                      The public IP address or hostname of a server that's accessible from the internet and also has access to the hotel's internal network.
+                    </p>
+                    <p className="text-slate-500 ml-4 mt-1">
+                      Examples: <code className="bg-slate-950 px-1 rounded">jump.hotel.com</code>, <code className="bg-slate-950 px-1 rounded">203.0.113.50</code>, <code className="bg-slate-950 px-1 rounded">vpn-gateway.hotel.net</code>
+                    </p>
+                    <p className="text-slate-500 ml-4 mt-1">
+                      <strong>Where to get it:</strong> Ask hotel IT: "What's the public hostname/IP of the SSH jump server I should connect through?"
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-green-300 font-medium">SSH Port</p>
+                    <p className="text-slate-400 ml-4">
+                      The TCP port number the SSH server is listening on.
+                    </p>
+                    <p className="text-slate-500 ml-4 mt-1">
+                      Default: <code className="bg-slate-950 px-1 rounded">22</code> (most common)
+                    </p>
+                    <p className="text-slate-500 ml-4 mt-1">
+                      Some hotels use non-standard ports for security: <code className="bg-slate-950 px-1 rounded">2222</code>, <code className="bg-slate-950 px-1 rounded">2200</code>, etc.
+                    </p>
+                    <p className="text-slate-500 ml-4 mt-1">
+                      <strong>Where to get it:</strong> Ask hotel IT: "What port does the SSH server listen on?" If they don't specify, try <code className="bg-slate-950 px-1 rounded">22</code> first.
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-green-300 font-medium">SSH Username</p>
+                    <p className="text-slate-400 ml-4">
+                      Your login username for the SSH server.
+                    </p>
+                    <p className="text-slate-500 ml-4 mt-1">
+                      Examples: <code className="bg-slate-950 px-1 rounded">admin</code>, <code className="bg-slate-950 px-1 rounded">yourname</code>, <code className="bg-slate-950 px-1 rounded">contractor</code>
+                    </p>
+                    <p className="text-slate-500 ml-4 mt-1">
+                      <strong>Where to get it:</strong> Hotel IT will create an account for you and provide the username.
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-green-300 font-medium">SSH Key Path (optional)</p>
+                    <p className="text-slate-400 ml-4">
+                      The file path to your private SSH key on your computer. If left blank, SSH will use your default key or prompt for a password.
+                    </p>
+                    <p className="text-slate-500 ml-4 mt-1">
+                      Examples: <code className="bg-slate-950 px-1 rounded">~/.ssh/id_ed25519</code>, <code className="bg-slate-950 px-1 rounded">C:\Users\YourName\.ssh\hotel_key</code>
+                    </p>
+                    <p className="text-slate-500 ml-4 mt-1">
+                      <strong>When to use:</strong> If you have multiple SSH keys or the hotel requires a specific key file.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-slate-200 mb-1">Generate an SSH key (if needed):</p>
+
+              <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700">
+                <p className="font-medium text-slate-200 mb-2">🔑 Generate an SSH key (if you don't have one):</p>
                 <div className="relative">
                   <code className="block bg-slate-950 p-2 rounded border border-slate-800 text-green-300 font-mono">
                     ssh-keygen -t ed25519 -C "your-email@company.com"
@@ -69,6 +121,50 @@ export function HelpGuide({ isOpen, onClose }: HelpGuideProps) {
                     {copied === 'sshkey' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                   </button>
                 </div>
+                <p className="text-slate-500 mt-2">
+                  This creates two files: <code className="bg-slate-950 px-1 rounded">~/.ssh/id_ed25519</code> (private key - keep secret!) and <code className="bg-slate-950 px-1 rounded">~/.ssh/id_ed25519.pub</code> (public key - send to hotel IT).
+                </p>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700">
+                <p className="font-medium text-slate-200 mb-2">📧 Email template to send to hotel IT:</p>
+                <div className="relative">
+                  <pre className="bg-slate-950 p-3 rounded border border-slate-800 text-slate-300 text-xs whitespace-pre-wrap font-mono">
+{`Hi, I need SSH access to connect to the Opera PMS server remotely.
+
+Please provide:
+1. SSH jump server hostname/IP (public address)
+2. SSH port number (default 22?)
+3. My SSH username on the jump server
+4. Confirmation that my public key is authorized
+
+My public key to add to authorized_keys:
+[PASTE YOUR PUBLIC KEY FROM ~/.ssh/id_ed25519.pub]
+
+The Opera server I need to reach is at: [OPERA_IP]:[OPERA_PORT]
+
+Thanks!`}
+                  </pre>
+                  <button
+                    onClick={() => copyToClipboard(`Hi, I need SSH access to connect to the Opera PMS server remotely.\n\nPlease provide:\n1. SSH jump server hostname/IP (public address)\n2. SSH port number (default 22?)\n3. My SSH username on the jump server\n4. Confirmation that my public key is authorized\n\nMy public key to add to authorized_keys:\n[PASTE YOUR PUBLIC KEY FROM ~/.ssh/id_ed25519.pub]\n\nThe Opera server I need to reach is at: [OPERA_IP]:[OPERA_PORT]\n\nThanks!`, 'sshemail')}
+                    className="absolute top-2 right-2 p-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-400"
+                  >
+                    {copied === 'sshemail' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
+                <p className="text-amber-300 font-medium mb-1">💡 How it works:</p>
+                <p className="text-slate-400">
+                  Your computer → SSH to jump server → Port forward to Opera server on internal network
+                </p>
+                <p className="text-slate-500 mt-1">
+                  Example: <code className="bg-slate-950 px-1 rounded">ssh -N -L 7001:192.168.10.50:7001 admin@jump.hotel.com</code>
+                </p>
+                <p className="text-slate-500 mt-1">
+                  Then access Opera at <code className="bg-slate-950 px-1 rounded">http://localhost:7001</code> in your browser.
+                </p>
               </div>
             </div>
           </section>
