@@ -1,10 +1,11 @@
-import { Server, RefreshCw, Plus, Search, LayoutGrid, List } from 'lucide-react';
+import { Server, RefreshCw, Plus, Search, LayoutGrid, List, HelpCircle } from 'lucide-react';
 
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onAddServer: () => void;
   onCheckAll: () => void;
+  onHelp: () => void;
   viewMode: 'grid' | 'list';
   onViewModeChange: (mode: 'grid' | 'list') => void;
   serverCount: number;
@@ -15,6 +16,7 @@ export function Header({
   onSearchChange,
   onAddServer,
   onCheckAll,
+  onHelp,
   viewMode,
   onViewModeChange,
   serverCount,
@@ -39,6 +41,14 @@ export function Header({
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={onHelp}
+              className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm"
+              title="Connection setup guide"
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">Help</span>
+            </button>
             <button
               onClick={onCheckAll}
               className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm"

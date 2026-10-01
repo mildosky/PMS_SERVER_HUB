@@ -5,6 +5,7 @@ import { ServerModal } from './components/ServerModal';
 import { FilterBar } from './components/FilterBar';
 import { StatsBar } from './components/StatsBar';
 import { ConnectionPanel } from './components/ConnectionPanel';
+import { HelpGuide } from './components/HelpGuide';
 import { useServers } from './hooks/useServers';
 import { Server, EnvironmentFilter, StatusFilter } from './types';
 import { ServerCrash } from 'lucide-react';
@@ -19,6 +20,7 @@ function App() {
   const [editServer, setEditServer] = useState<Server | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [connectServer, setConnectServer] = useState<Server | null>(null);
+  const [showHelpGuide, setShowHelpGuide] = useState(false);
 
   const filteredServers = useMemo(() => {
     return servers.filter((server) => {
@@ -81,6 +83,7 @@ function App() {
         onSearchChange={setSearchQuery}
         onAddServer={handleAddServer}
         onCheckAll={checkAllStatuses}
+        onHelp={() => setShowHelpGuide(true)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         serverCount={servers.length}
@@ -189,6 +192,8 @@ function App() {
           </div>
         </div>
       )}
+
+      <HelpGuide isOpen={showHelpGuide} onClose={() => setShowHelpGuide(false)} />
     </div>
   );
 }
