@@ -219,7 +219,9 @@ export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, 
       <div className="space-y-2 mb-4">
         <div className="flex items-center gap-2 text-xs text-slate-300">
           <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-          <span className="font-mono truncate">{server.operaHost}:{server.operaPort}</span>
+          <span className="font-mono truncate">
+            {server.operaHost}{server.operaPort ? `:${server.operaPort}` : ''}
+          </span>
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-300">
           <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />

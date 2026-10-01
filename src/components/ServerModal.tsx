@@ -22,7 +22,7 @@ export function ServerModal({ isOpen, onClose, onSave, onUpdate, editServer }: S
   const [formData, setFormData] = useState({
     name: '',
     operaHost: '',
-    operaPort: '7001',
+    operaPort: '', // Optional - empty means use default (80 for HTTP, 443 for HTTPS)
     property: '',
     environment: 'production' as Server['environment'],
     region: '',
@@ -54,7 +54,7 @@ export function ServerModal({ isOpen, onClose, onSave, onUpdate, editServer }: S
       setFormData({
         name: editServer.name,
         operaHost: editServer.operaHost,
-        operaPort: editServer.operaPort,
+        operaPort: editServer.operaPort || '',
         property: editServer.property,
         environment: editServer.environment,
         region: editServer.region,
@@ -110,7 +110,7 @@ export function ServerModal({ isOpen, onClose, onSave, onUpdate, editServer }: S
     const serverData: Omit<Server, 'id' | 'addedAt' | 'lastChecked'> = {
       name: formData.name,
       operaHost: formData.operaHost,
-      operaPort: formData.operaPort,
+      operaPort: formData.operaPort || undefined, // Empty string becomes undefined
       property: formData.property,
       environment: formData.environment,
       region: formData.region,
@@ -369,14 +369,17 @@ export function ServerModal({ isOpen, onClose, onSave, onUpdate, editServer }: S
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Opera Port *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Opera Port <span className="text-xs text-slate-500">(optional)</span>
+              </label>
               <input
                 type="text"
-                required
                 value={formData.operaPort}
                 onChange={(e) => setFormData({ ...formData, operaPort: e.target.value })}
+                placeholder="80, 443, 8080..."
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
               />
+              <p className="text-xs text-slate-500 mt-1">Leave empty for default (80/443)</p>
             </div>
           </div>
 

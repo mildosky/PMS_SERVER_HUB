@@ -5,25 +5,27 @@ import { Server } from '../types';
  * This creates a tunnel: localhost:LOCAL_PORT -> SSH_JUMP -> OPERA_HOST:OPERA_PORT
  */
 export function generateSSHTunnelCommand(server: Server, localPort?: string): string {
-  const port = localPort || server.operaPort;
+  const remotePort = server.operaPort || '80'; // Default to port 80 if not specified
+  const port = localPort || remotePort;
   const sshPort = server.sshPort || '22';
   const sshUser = server.sshUser || 'admin';
   const sshHost = server.sshHost || '';
   const keyFlag = server.sshKeyPath ? ` -i "${server.sshKeyPath}"` : '';
 
-  return `ssh -N -L ${port}:${server.operaHost}:${server.operaPort} ${sshUser}@${sshHost} -p ${sshPort}${keyFlag}`;
+  return `ssh -N -L ${port}:${server.operaHost}:${remotePort} ${sshUser}@${sshHost} -p ${sshPort}${keyFlag}`;
 }
 
 /**
  * Generates a PuTTY-compatible command (Windows)
  */
 export function generatePuttyCommand(server: Server, localPort?: string): string {
-  const port = localPort || server.operaPort;
+  const remotePort = server.operaPort || '80'; // Default to port 80 if not specified
+  const port = localPort || remotePort;
   const sshPort = server.sshPort || '22';
   const sshUser = server.sshUser || 'admin';
   const sshHost = server.sshHost || '';
 
-  return `putty -ssh -L ${port}:${server.operaHost}:${server.operaPort} -P ${sshPort} ${sshUser}@${sshHost}`;
+  return `putty -ssh -L ${port}:${server.operaHost}:${remotePort} -P ${sshPort} ${sshUser}@${sshHost}`;
 }
 
 /**
@@ -109,23 +111,23 @@ PersistentKeepalive = 25
  */
 export function getLocalAccessURL(server: Server, localPort?: string): string {
   const port = localPort || server.operaPort;
-
+  const portSuffix = port ? `:${port}` : '';
+  
   switch (server.connectionMethod) {
     case 'ssh-tunnel':
-      return `http://localhost:${port}`;
+      return `http://localhost${port ? `:${port}` : ''}`;
     case 'tailscale':
-      return `http://${server.tailscaleHostname || server.operaHost}:${server.operaPort}`;
+      return `http://${server.tailscaleHostname || server.operaHost}${server.operaPort ? `:${server.operaPort}` : ''}`;
     case 'wireguard':
-      return `http://${server.operaHost}:${server.operaPort}`;
+      return `http://${server.operaHost}${server.operaPort ? `:${server.operaPort}` : ''}`;
     case 'rdp':
       return `rdp://${server.rdpHost || server.operaHost}:${server.rdpPort || '3389'}`;
     case 'direct':
-      return server.directUrl || `http://${server.operaHost}:${server.operaPort}`;
+      return server.directUrl || `http://${server.operaHost}${server.operaPort ? `:${server.operaPort}` : ''}`;
     default:
-      return `http://${server.operaHost}:${server.operaPort}`;
+      return `http://${server.operaHost}${server.operaPort ? `:${server.operaPort}` : ''}`;
   }
 }
-
 /**
  * Gets the connection method display info
  */

@@ -3,7 +3,7 @@ export interface Server {
   name: string;
   // The Opera PMS address on the remote/hotel network
   operaHost: string;
-  operaPort: string;
+  operaPort?: string; // Optional - defaults to 80 (HTTP) or 443 (HTTPS)
   property: string;
   environment: 'production' | 'staging' | 'development' | 'training';
   region: string;
