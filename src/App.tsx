@@ -4,6 +4,7 @@ import { ServerCard } from './components/ServerCard';
 import { ServerModal } from './components/ServerModal';
 import { FilterBar } from './components/FilterBar';
 import { StatsBar } from './components/StatsBar';
+import { ConnectionPanel } from './components/ConnectionPanel';
 import { useServers } from './hooks/useServers';
 import { Server, EnvironmentFilter, StatusFilter } from './types';
 import { ServerCrash } from 'lucide-react';
@@ -17,23 +18,20 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editServer, setEditServer] = useState<Server | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [connectServer, setConnectServer] = useState<Server | null>(null);
 
   const filteredServers = useMemo(() => {
     return servers.filter((server) => {
-      // Search filter
       const query = searchQuery.toLowerCase();
       const matchesSearch =
         !query ||
         server.name.toLowerCase().includes(query) ||
         server.property.toLowerCase().includes(query) ||
-        server.url.toLowerCase().includes(query) ||
+        server.operaHost.toLowerCase().includes(query) ||
         server.region.toLowerCase().includes(query) ||
         server.tags.some(tag => tag.toLowerCase().includes(query));
 
-      // Environment filter
       const matchesEnv = envFilter === 'all' || server.environment === envFilter;
-
-      // Status filter
       const matchesStatus = statusFilter === 'all' || server.status === statusFilter;
 
       return matchesSearch && matchesEnv && matchesStatus;
@@ -72,6 +70,10 @@ function App() {
     setIsModalOpen(true);
   };
 
+  const handleConnect = (server: Server) => {
+    setConnectServer(server);
+  };
+
   return (
     <div className="min-h-screen bg-slate-900">
       <Header
@@ -85,10 +87,8 @@ function App() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Stats Overview */}
         <StatsBar servers={servers} />
 
-        {/* Filters */}
         <FilterBar
           envFilter={envFilter}
           statusFilter={statusFilter}
@@ -97,7 +97,6 @@ function App() {
           counts={counts}
         />
 
-        {/* Server Grid/List */}
         {filteredServers.length > 0 ? (
           <div
             className={
@@ -114,6 +113,7 @@ function App() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onCheckStatus={checkStatus}
+                onConnect={handleConnect}
               />
             ))}
           </div>
@@ -125,8 +125,8 @@ function App() {
             <h3 className="text-lg font-medium text-slate-300 mb-2">No servers found</h3>
             <p className="text-sm text-slate-500 max-w-md">
               {searchQuery || envFilter !== 'all' || statusFilter !== 'all'
-                ? 'Try adjusting your search or filters to find what you\'re looking for.'
-                : 'Get started by adding your first Opera PMS v5 server to the hub.'}
+                ? 'Try adjusting your search or filters.'
+                : 'Add your first Opera PMS v5 server to start managing remote connections.'}
             </p>
             {!searchQuery && envFilter === 'all' && statusFilter === 'all' && (
               <button
@@ -139,18 +139,16 @@ function App() {
           </div>
         )}
 
-        {/* Footer info */}
         <div className="mt-12 pt-6 border-t border-slate-800 text-center">
           <p className="text-xs text-slate-600">
-            Opera PMS v5 Server Hub • Manage and access your physically hosted PMS servers
+            Opera PMS v5 Server Hub • Tunnel & VPN connection manager for physically hosted PMS servers
           </p>
           <p className="text-xs text-slate-700 mt-1">
-            Servers are stored locally in your browser • Data persists across sessions
+            Generates SSH tunnels, RDP files, WireGuard & Tailscale configs • Stored locally in your browser
           </p>
         </div>
       </main>
 
-      {/* Add/Edit Modal */}
       <ServerModal
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); setEditServer(null); }}
@@ -159,14 +157,20 @@ function App() {
         editServer={editServer}
       />
 
-      {/* Delete Confirmation */}
+      {connectServer && (
+        <ConnectionPanel
+          server={connectServer}
+          onClose={() => setConnectServer(null)}
+        />
+      )}
+
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)} />
           <div className="relative bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-6 max-w-sm w-full">
             <h3 className="text-lg font-semibold text-white mb-2">Delete Server</h3>
             <p className="text-sm text-slate-400 mb-6">
-              Are you sure you want to remove this server from the hub? This action cannot be undone.
+              Are you sure you want to remove this server? This action cannot be undone.
             </p>
             <div className="flex items-center gap-3">
               <button

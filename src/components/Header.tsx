@@ -30,10 +30,10 @@ export function Header({
             </div>
             <div>
               <h1 className="text-xl font-bold text-white tracking-tight">
-                Opera PMS v5 Server Hub
+                Opera PMS v5 Access Hub
               </h1>
               <p className="text-xs text-slate-400">
-                {serverCount} server{serverCount !== 1 ? 's' : ''} managed
+                {serverCount} server{serverCount !== 1 ? 's' : ''} • Tunnel & VPN manager
               </p>
             </div>
           </div>
