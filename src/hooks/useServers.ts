@@ -104,9 +104,12 @@ export function useServers() {
   }, [servers]);
 
   const addServer = useCallback((server: Omit<Server, 'id' | 'addedAt' | 'lastChecked'>) => {
+    const id = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     const newServer: Server = {
       ...server,
-      id: crypto.randomUUID(),
+      id,
       addedAt: new Date().toISOString(),
       lastChecked: null,
     };
