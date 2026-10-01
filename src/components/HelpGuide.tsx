@@ -166,6 +166,26 @@ Thanks!`}
                   Then access Opera at <code className="bg-slate-950 px-1 rounded">http://localhost:7001</code> in your browser.
                 </p>
               </div>
+
+              <div className="bg-red-500/5 border border-red-500/20 rounded-lg p-3">
+                <p className="text-red-300 font-medium mb-2">⚠️ Troubleshooting: "Missing or invalid Authorization header"</p>
+                <p className="text-slate-400 mb-2">
+                  If you see <code className="bg-slate-950 px-1 rounded">{'{"error":"Missing or invalid Authorization header"}'}</code>, you're hitting the REST API, not the web UI.
+                </p>
+                <p className="text-slate-300 font-medium mb-1">Try these URLs instead:</p>
+                <ul className="list-disc list-inside text-slate-400 space-y-1 ml-2">
+                  <li><code className="bg-slate-950 px-1 rounded text-cyan-300">http://localhost:7001/opera</code> (common Opera PMS path)</li>
+                  <li><code className="bg-slate-950 px-1 rounded text-cyan-300">http://localhost:7001/webui</code></li>
+                  <li><code className="bg-slate-950 px-1 rounded text-cyan-300">http://localhost:7001/ohi</code> (Oracle Hospitality Interface)</li>
+                  <li><code className="bg-slate-950 px-1 rounded text-cyan-300">http://localhost:7001/index.html</code></li>
+                </ul>
+                <p className="text-slate-500 mt-2 text-[11px]">
+                  Ask your hotel IT: "What's the correct URL path for the Opera PMS web interface?"
+                </p>
+                <p className="text-slate-500 mt-1 text-[11px]">
+                  The web UI might also be on a different port (e.g., 8080, 8443, or 443 for HTTPS).
+                </p>
+              </div>
             </div>
           </section>
 
