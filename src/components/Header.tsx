@@ -1,4 +1,4 @@
-import { Server, RefreshCw, Plus, Search, LayoutGrid, List, HelpCircle } from 'lucide-react';
+import { Server, RefreshCw, Plus, Search, LayoutGrid, List, HelpCircle, Shield } from 'lucide-react';
 
 interface HeaderProps {
   searchQuery: string;
@@ -6,6 +6,7 @@ interface HeaderProps {
   onAddServer: () => void;
   onCheckAll: () => void;
   onHelp: () => void;
+  onITAdmin: () => void;
   viewMode: 'grid' | 'list';
   onViewModeChange: (mode: 'grid' | 'list') => void;
   serverCount: number;
@@ -17,6 +18,7 @@ export function Header({
   onAddServer,
   onCheckAll,
   onHelp,
+  onITAdmin,
   viewMode,
   onViewModeChange,
   serverCount,
@@ -41,6 +43,14 @@ export function Header({
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={onITAdmin}
+              className="flex items-center gap-2 px-3 py-2 bg-orange-700 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm"
+              title="IT Admin setup guide"
+            >
+              <Shield className="w-4 h-4" />
+              <span className="hidden sm:inline">IT Admin</span>
+            </button>
             <button
               onClick={onHelp}
               className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm"
