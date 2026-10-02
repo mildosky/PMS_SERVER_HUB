@@ -4,7 +4,6 @@ import { ServerCard } from './components/ServerCard';
 import { ServerModal } from './components/ServerModal';
 import { FilterBar } from './components/FilterBar';
 import { StatsBar } from './components/StatsBar';
-import { ConnectionManager } from './components/ConnectionManager';
 import { HelpGuide } from './components/HelpGuide';
 import { ITAdminGuide } from './components/ITAdminGuide';
 import { ToastContainer, ToastMessage } from './components/Toast';
@@ -23,7 +22,6 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editServer, setEditServer] = useState<Server | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [connectServer, setConnectServer] = useState<Server | null>(null);
   const [showHelpGuide, setShowHelpGuide] = useState(false);
   const [showITAdminGuide, setShowITAdminGuide] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -89,14 +87,7 @@ function App() {
   };
 
   /**
-   * Opens the connection manager modal (for managing an existing connection)
-   */
-  const handleConnect = (server: Server) => {
-    setConnectServer(server);
-  };
-
-  /**
-   * One-click quick connect - directly connects/disconnects without modal
+   * One-click quick connect - directly connects/disconnects via toggle
    */
   const handleQuickConnect = async (server: Server) => {
     setConnectingServerId(server.id);
@@ -164,7 +155,6 @@ function App() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onCheckStatus={checkStatus}
-                onConnect={handleConnect}
                 onQuickConnect={handleQuickConnect}
                 isConnected={connectionManager.isConnected(server.id)}
                 isConnecting={connectingServerId === server.id}
@@ -211,21 +201,6 @@ function App() {
         onUpdate={updateServer}
         editServer={editServer}
       />
-
-      {connectServer && (
-        <ConnectionManager
-          server={connectServer}
-          onClose={() => setConnectServer(null)}
-          isConnected={connectionManager.isConnected(connectServer.id)}
-          onToggle={() => connectionManager.toggleConnection(connectServer)}
-          localPort={connectionManager.getConnection(connectServer.id)?.localPort || connectServer.operaPort || '80'}
-          onLocalPortChange={(port) => connectionManager.setLocalPort(connectServer.id, port)}
-          sshCommand={connectionManager.getSSHTunnelCommand(connectServer)}
-          disconnectCommand={connectionManager.getDisconnectCommand(connectServer)}
-          accessURL={connectionManager.getAccessURL(connectServer)}
-          activatedAt={connectionManager.getConnection(connectServer.id)?.activatedAt ?? null}
-        />
-      )}
 
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
