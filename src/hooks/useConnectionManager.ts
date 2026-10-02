@@ -74,13 +74,10 @@ export function useConnectionManager() {
     const isManagerRunning = await checkTunnelManagerStatus();
 
     if (!isManagerRunning) {
-      // Tunnel manager not running - provide the start command to copy
-      const startCommand = 'cd tunnel-manager && start.bat';
       return {
         success: false,
-        message: `Tunnel Manager is not running. Copy the command below, paste it in PowerShell, then click Connect again.`,
+        message: 'Tunnel Manager is not running. Please start it using tunnel-manager\\start.bat',
         type: 'warning',
-        copyText: startCommand,
       };
     }
 

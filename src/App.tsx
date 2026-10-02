@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { ServerCard } from './components/ServerCard';
 import { ServerModal } from './components/ServerModal';
@@ -26,6 +26,29 @@ function App() {
   const [showITAdminGuide, setShowITAdminGuide] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [connectingServerId, setConnectingServerId] = useState<string | null>(null);
+  const [tunnelManagerStatus, setTunnelManagerStatus] = useState<'checking' | 'running' | 'stopped'>('checking');
+
+  // Check tunnel manager status on mount and periodically
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/health', {
+          signal: AbortSignal.timeout(2000)
+        });
+        if (response.ok) {
+          setTunnelManagerStatus('running');
+        } else {
+          setTunnelManagerStatus('stopped');
+        }
+      } catch {
+        setTunnelManagerStatus('stopped');
+      }
+    };
+
+    checkStatus();
+    const interval = setInterval(checkStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const addToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -124,6 +147,46 @@ function App() {
         onViewModeChange={setViewMode}
         serverCount={servers.length}
       />
+
+      {/* Tunnel Manager Status Banner */}
+      {tunnelManagerStatus === 'stopped' && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-200">
+                  Tunnel Manager is not running
+                </p>
+                <p className="text-xs text-amber-300/70 mt-0.5">
+                  Run <code className="bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-200 font-mono">tunnel-manager\start.bat</code> to enable one-click connections
+                </p>
+              </div>
+              <a
+                href="http://localhost:3001"
+                className="flex-shrink-0 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 rounded-lg text-xs font-medium text-amber-200 transition-colors"
+              >
+                Retry Connection
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tunnelManagerStatus === 'running' && (
+        <div className="bg-emerald-500/10 border-b border-emerald-500/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <p className="text-xs font-medium text-emerald-300">
+                Tunnel Manager is running • One-click connections enabled
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <StatsBar 
