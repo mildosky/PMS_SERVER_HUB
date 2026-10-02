@@ -10,20 +10,17 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-// Serve the built frontend app
-// Look for index.html in the project root (parent of tunnel-manager folder)
+// Serve the built frontend app from the project root
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-const DIST_PATH = path.join(PROJECT_ROOT, 'dist');
-const ROOT_PATH = PROJECT_ROOT;
-
-// Try dist/ first (standard build), then root (singlefile build)
-const servePath = fs.existsSync(path.join(DIST_PATH, 'index.html')) ? DIST_PATH : ROOT_PATH;
+const servePath = PROJECT_ROOT;
 
 app.use(express.static(servePath, {
   index: 'index.html',
-  // Don't serve source files, only the built output
+  // Add cache-busting headers to prevent stale versions
   setHeaders: (res, filePath) => {
-    // SPA fallback - serve index.html for all non-file routes
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
   }
 }));
 
