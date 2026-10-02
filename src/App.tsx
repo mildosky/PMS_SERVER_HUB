@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Header } from './components/Header';
 import { ServerCard } from './components/ServerCard';
 import { ServerModal } from './components/ServerModal';
@@ -7,6 +7,7 @@ import { StatsBar } from './components/StatsBar';
 import { ConnectionManager } from './components/ConnectionManager';
 import { HelpGuide } from './components/HelpGuide';
 import { ITAdminGuide } from './components/ITAdminGuide';
+import { ToastContainer, ToastMessage } from './components/Toast';
 import { useServers } from './hooks/useServers';
 import { useConnectionManager } from './hooks/useConnectionManager';
 import { Server, EnvironmentFilter, StatusFilter } from './types';
@@ -25,6 +26,17 @@ function App() {
   const [connectServer, setConnectServer] = useState<Server | null>(null);
   const [showHelpGuide, setShowHelpGuide] = useState(false);
   const [showITAdminGuide, setShowITAdminGuide] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [connectingServerId, setConnectingServerId] = useState<string | null>(null);
+
+  const addToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setToasts(prev => [...prev, { ...toast, id }]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
 
   const filteredServers = useMemo(() => {
     return servers.filter((server) => {
@@ -76,8 +88,36 @@ function App() {
     setIsModalOpen(true);
   };
 
+  /**
+   * Opens the connection manager modal (for managing an existing connection)
+   */
   const handleConnect = (server: Server) => {
     setConnectServer(server);
+  };
+
+  /**
+   * One-click quick connect - directly connects/disconnects without modal
+   */
+  const handleQuickConnect = async (server: Server) => {
+    setConnectingServerId(server.id);
+    try {
+      const result = await connectionManager.quickConnect(server);
+      addToast({
+        type: result.type,
+        title: result.success ? 'Connected' : result.type === 'warning' ? 'Action Required' : 'Connection Failed',
+        message: result.message,
+        copyText: result.copyText,
+        duration: result.success ? 3000 : 8000,
+      });
+    } catch (error) {
+      addToast({
+        type: 'error',
+        title: 'Connection Error',
+        message: error instanceof Error ? error.message : 'An unexpected error occurred',
+      });
+    } finally {
+      setConnectingServerId(null);
+    }
   };
 
   return (
@@ -125,7 +165,9 @@ function App() {
                 onDelete={handleDelete}
                 onCheckStatus={checkStatus}
                 onConnect={handleConnect}
+                onQuickConnect={handleQuickConnect}
                 isConnected={connectionManager.isConnected(server.id)}
+                isConnecting={connectingServerId === server.id}
                 connectionActivatedAt={connectionManager.getConnection(server.id)?.activatedAt ?? null}
               />
             ))}
@@ -157,7 +199,7 @@ function App() {
             Opera PMS v5 Server Hub • Tunnel & VPN connection manager for physically hosted PMS servers
           </p>
           <p className="text-xs text-slate-700 mt-1">
-            Generates SSH tunnels, RDP files, WireGuard & Tailscale configs • Stored locally in your browser
+            One-click SSH tunnels, RDP files, WireGuard & Tailscale configs • Stored locally in your browser
           </p>
         </div>
       </main>
@@ -211,8 +253,10 @@ function App() {
         </div>
       )}
 
-      <HelpGuide isOpen={showHelpGuide} onClose={() => setShowHelpGuide(false)} />
-      <ITAdminGuide isOpen={showITAdminGuide} onClose={() => setShowITAdminGuide(false)} />
+      {showHelpGuide && <HelpGuide isOpen={showHelpGuide} onClose={() => setShowHelpGuide(false)} />}
+      {showITAdminGuide && <ITAdminGuide isOpen={showITAdminGuide} onClose={() => setShowITAdminGuide(false)} />}
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 }

@@ -15,6 +15,8 @@ import {
   Shield,
   Terminal,
   Monitor,
+  Loader2,
+  Settings,
 } from 'lucide-react';
 import { useState } from 'react';
 import { getConnectionMethodInfo, getLocalAccessURL } from '../utils/connections';
@@ -26,7 +28,9 @@ interface ServerCardProps {
   onDelete: (id: string) => void;
   onCheckStatus: (id: string) => void;
   onConnect: (server: Server) => void;
+  onQuickConnect: (server: Server) => void;
   isConnected: boolean;
+  isConnecting: boolean;
   connectionActivatedAt: string | null;
 }
 
@@ -67,7 +71,7 @@ function formatLastChecked(dateStr: string | null): string {
   return `${diffDays}d ago`;
 }
 
-export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, onConnect, isConnected, connectionActivatedAt }: ServerCardProps) {
+export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, onConnect, onQuickConnect, isConnected, isConnecting, connectionActivatedAt }: ServerCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const status = statusConfig[server.status];
@@ -139,17 +143,43 @@ export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, 
             >
               {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
             </button>
-            <button
-              onClick={() => onConnect(server)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                isConnected
-                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white'
-              }`}
-            >
-              <Cable className="w-3 h-3" />
-              {isConnected ? 'Manage' : 'Connect'}
-            </button>
+            {isConnected ? (
+              <>
+                <button
+                  onClick={() => onConnect(server)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors bg-slate-600 hover:bg-slate-500 text-white"
+                  title="Manage connection"
+                >
+                  <Settings className="w-3 h-3" />
+                  Manage
+                </button>
+                <button
+                  onClick={() => onQuickConnect(server)}
+                  disabled={isConnecting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors bg-red-600 hover:bg-red-500 text-white disabled:opacity-50"
+                >
+                  {isConnecting ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Cable className="w-3 h-3" />
+                  )}
+                  Disconnect
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => onQuickConnect(server)}
+                disabled={isConnecting}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50"
+              >
+                {isConnecting ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Cable className="w-3 h-3" />
+                )}
+                Connect
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -157,7 +187,9 @@ export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, 
   }
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5 hover:border-slate-600 transition-all group relative overflow-hidden">
+    <div className={`bg-slate-800/50 border rounded-xl p-5 hover:border-slate-600 transition-all group relative overflow-hidden ${
+      isConnected ? 'border-emerald-500/30' : 'border-slate-700'
+    }`}>
       <div className={`absolute top-0 left-0 right-0 h-1 ${status.color}`} />
 
       <div className="absolute top-3 right-3">
@@ -190,6 +222,15 @@ export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, 
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               Copy URL
             </button>
+            {isConnected && (
+              <button
+                onClick={() => { onConnect(server); setShowMenu(false); }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-200 hover:bg-slate-600 transition-colors"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Manage Connection
+              </button>
+            )}
             <hr className="border-slate-600 my-1" />
             <button
               onClick={() => { onDelete(server.id); setShowMenu(false); }}
@@ -283,17 +324,47 @@ export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, 
       )}
 
       <div className="flex items-center gap-2 pt-3 border-t border-slate-700/50">
-        <button
-          onClick={() => onConnect(server)}
-          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors shadow-lg ${
-            isConnected
-              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/10'
-              : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/10'
-          }`}
-        >
-          <Cable className="w-3.5 h-3.5" />
-          {isConnected ? 'Manage' : 'Connect'}
-        </button>
+        {isConnected ? (
+          <>
+            <button
+              onClick={() => onQuickConnect(server)}
+              disabled={isConnecting}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors shadow-lg bg-red-600 hover:bg-red-500 text-white shadow-red-600/10 disabled:opacity-50"
+            >
+              {isConnecting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Cable className="w-3.5 h-3.5" />
+              )}
+              Disconnect
+            </button>
+            <button
+              onClick={() => onConnect(server)}
+              className="p-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
+              title="Manage connection"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => onQuickConnect(server)}
+            disabled={isConnecting}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors shadow-lg bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/10 disabled:opacity-50"
+          >
+            {isConnecting ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <Cable className="w-3.5 h-3.5" />
+                Connect
+              </>
+            )}
+          </button>
+        )}
         <button
           onClick={handleCopyURL}
           className="p-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
