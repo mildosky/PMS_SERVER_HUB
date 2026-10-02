@@ -10,6 +10,23 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
+// Serve the built frontend app
+// Look for index.html in the project root (parent of tunnel-manager folder)
+const PROJECT_ROOT = path.resolve(__dirname, '..');
+const DIST_PATH = path.join(PROJECT_ROOT, 'dist');
+const ROOT_PATH = PROJECT_ROOT;
+
+// Try dist/ first (standard build), then root (singlefile build)
+const servePath = fs.existsSync(path.join(DIST_PATH, 'index.html')) ? DIST_PATH : ROOT_PATH;
+
+app.use(express.static(servePath, {
+  index: 'index.html',
+  // Don't serve source files, only the built output
+  setHeaders: (res, filePath) => {
+    // SPA fallback - serve index.html for all non-file routes
+  }
+}));
+
 // Store active SSH processes
 const activeTunnels = new Map();
 
@@ -89,6 +106,8 @@ app.post('/api/tunnel/start', (req, res) => {
     // Update state
     updateState(serverId, true);
 
+    console.log(`[OK] Tunnel started for ${serverId} (PID: ${sshProcess.pid})`);
+
     res.json({ 
       success: true, 
       pid: sshProcess.pid,
@@ -115,13 +134,15 @@ app.post('/api/tunnel/stop', (req, res) => {
     
     // Also try to kill by PID (in case process tree)
     if (process.platform === 'win32') {
-      spawn('taskkill', ['/pid', tunnel.pid, '/f', '/t']);
+      spawn('taskkill', ['/pid', tunnel.pid, '/f', '/t'], { windowsHide: true });
     } else {
       spawn('kill', ['-9', tunnel.pid]);
     }
 
     activeTunnels.delete(serverId);
     updateState(serverId, false);
+
+    console.log(`[OK] Tunnel stopped for ${serverId}`);
 
     res.json({ success: true, message: 'Tunnel stopped successfully' });
   } catch (error) {
@@ -183,10 +204,33 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// SPA fallback - serve index.html for any unmatched routes
+app.get('*', (req, res) => {
+  const indexPath = path.join(servePath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).json({ 
+      error: 'Frontend not found. Run "npm run build" in the project root first.' 
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
-  console.log(`Opera PMS Tunnel Manager running on http://localhost:${PORT}`);
-  console.log('Ready to manage SSH tunnels...');
+  console.log('');
+  console.log('========================================');
+  console.log('  Opera PMS v5 Server Hub');
+  console.log('  Tunnel Manager + Web UI');
+  console.log('========================================');
+  console.log('');
+  console.log(`  Web UI:     http://localhost:${PORT}`);
+  console.log(`  API:        http://localhost:${PORT}/api/health`);
+  console.log(`  Serving:    ${servePath}`);
+  console.log('');
+  console.log('  Ready to manage SSH tunnels...');
+  console.log('  Press Ctrl+C to stop.');
+  console.log('');
 });
 
 // Graceful shutdown
@@ -198,12 +242,18 @@ process.on('SIGINT', () => {
     try {
       tunnel.process.kill('SIGTERM');
       if (process.platform === 'win32') {
-        spawn('taskkill', ['/pid', tunnel.pid, '/f', '/t']);
+        spawn('taskkill', ['/pid', tunnel.pid, '/f', '/t'], { windowsHide: true });
       }
+      console.log(`  Stopped tunnel: ${serverId}`);
     } catch (e) {
-      // Ignore errors during shutdown
+      // ignore
     }
   });
   
+  console.log('Goodbye!');
   process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  process.emit('SIGINT');
 });
