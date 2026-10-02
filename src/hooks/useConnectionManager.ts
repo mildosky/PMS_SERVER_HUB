@@ -3,6 +3,7 @@ import { Server } from '../types';
 import { generateSSHTunnelCommand, getLocalAccessURL } from '../utils/connections';
 
 const STORAGE_KEY = 'opera-pms-connections';
+const TUNNEL_MANAGER_URL = 'http://localhost:3001';
 
 interface ConnectionState {
   serverId: string;
@@ -36,22 +37,98 @@ export function useConnectionManager() {
     saveConnections(connections);
   }, [connections]);
 
-  const toggleConnection = useCallback((server: Server) => {
-    setConnections(prev => {
-      const current = prev[server.id];
-      const isActive = current?.active ?? false;
-
-      return {
-        ...prev,
-        [server.id]: {
-          serverId: server.id,
-          active: !isActive,
-          activatedAt: !isActive ? new Date().toISOString() : null,
-          localPort: current?.localPort || server.operaPort || '80',
-        },
-      };
-    });
+  const checkTunnelManagerStatus = useCallback(async (): Promise<boolean> => {
+    try {
+      const response = await fetch(`${TUNNEL_MANAGER_URL}/api/health`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(2000)
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
   }, []);
+
+  const toggleConnection = useCallback(async (server: Server) => {
+    const current = connections[server.id];
+    const isActive = current?.active ?? false;
+    const localPort = current?.localPort || server.operaPort || '80';
+
+    // Check if tunnel manager is running
+    const isManagerRunning = await checkTunnelManagerStatus();
+    
+    if (!isManagerRunning) {
+      alert(
+        'Tunnel Manager service is not running!\n\n' +
+        'Please run "start.bat" in the tunnel-manager folder first.\n\n' +
+        'This service enables automatic SSH tunnel management.'
+      );
+      return;
+    }
+
+    if (!isActive) {
+      // Starting tunnel
+      try {
+        const sshCommand = generateSSHTunnelCommand(server, localPort);
+        
+        const response = await fetch(`${TUNNEL_MANAGER_URL}/api/tunnel/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            serverId: server.id,
+            command: sshCommand,
+            localPort,
+            operaHost: server.operaHost,
+            operaPort: server.operaPort || '80'
+          })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          setConnections(prev => ({
+            ...prev,
+            [server.id]: {
+              serverId: server.id,
+              active: true,
+              activatedAt: new Date().toISOString(),
+              localPort,
+            },
+          }));
+        } else {
+          alert(`Failed to start tunnel: ${result.error}`);
+        }
+      } catch (error) {
+        alert(`Error starting tunnel: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else {
+      // Stopping tunnel
+      try {
+        const response = await fetch(`${TUNNEL_MANAGER_URL}/api/tunnel/stop`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serverId: server.id })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          setConnections(prev => ({
+            ...prev,
+            [server.id]: {
+              ...prev[server.id],
+              active: false,
+              activatedAt: null,
+            },
+          }));
+        } else {
+          alert(`Failed to stop tunnel: ${result.error}`);
+        }
+      } catch (error) {
+        alert(`Error stopping tunnel: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+  }, [connections, checkTunnelManagerStatus]);
 
   const setLocalPort = useCallback((serverId: string, port: string) => {
     setConnections(prev => ({

@@ -1,0 +1,17 @@
+{
+  "name": "opera-pms-tunnel-manager",
+  "version": "1.0.0",
+  "description": "Background service for managing SSH tunnels to Opera PMS servers",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "install-deps": "npm install express cors"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "keywords": ["opera", "pms", "ssh", "tunnel", "vpn"],
+  "author": "Opera PMS Server Hub",
+  "license": "MIT"
+}

@@ -119,6 +119,13 @@ export function ConnectionManager({
               </button>
             </div>
 
+            {/* Auto-managed notice */}
+            <div className="mb-4 p-2 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+              <p className="text-xs text-blue-300">
+                ✨ Fully automatic - just toggle ON/OFF. No PowerShell required!
+              </p>
+            </div>
+
             {/* Connection Details */}
             {isConnected && (
               <div className="mt-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700">
@@ -191,47 +198,45 @@ export function ConnectionManager({
             </p>
           </div>
 
-          {/* SSH Command */}
-          <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-green-400" />
-                <h3 className="text-sm font-medium text-slate-300">SSH Tunnel Command</h3>
+          {/* SSH Command - Hidden since it's automatic now */}
+          {showAdvanced && (
+            <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-green-400" />
+                  <h3 className="text-sm font-medium text-slate-300">SSH Command (Debug)</h3>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(sshCommand, 'ssh')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-xs transition-colors"
+                >
+                  {copiedCommand === 'ssh' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      Copy
+                    </>
+                  )}
+                </button>
               </div>
-              <button
-                onClick={() => copyToClipboard(sshCommand, 'ssh')}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-xs transition-colors"
-              >
-                {copiedCommand === 'ssh' ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    Copy
-                  </>
-                )}
-              </button>
+              <div className="bg-slate-950 rounded-lg p-3 border border-slate-800">
+                <code className="text-xs text-green-300 font-mono break-all">{sshCommand}</code>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                This command is automatically executed by the Tunnel Manager service.
+              </p>
             </div>
-            <div className="bg-slate-950 rounded-lg p-3 border border-slate-800">
-              <code className="text-xs text-green-300 font-mono break-all">{sshCommand}</code>
-            </div>
-            <p className="text-xs text-slate-500 mt-2">
-              {isConnected ? (
-                '✓ Tunnel should be active. If not, copy and run this command in PowerShell.'
-              ) : (
-                'Copy this command and paste it into PowerShell to establish the tunnel.'
-              )}
-            </p>
-          </div>
+          )}
 
-          {/* Disconnect Instructions */}
-          {isConnected && (
+          {/* Disconnect Instructions - Hidden since toggle handles it */}
+          {isConnected && showAdvanced && (
             <div className="bg-red-500/5 rounded-xl p-4 border border-red-500/20">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-red-400">Disconnect</h3>
+                <h3 className="text-sm font-medium text-red-400">Disconnect Command (Debug)</h3>
                 <button
                   onClick={() => copyToClipboard(disconnectCommand, 'disconnect')}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-xs transition-colors"
@@ -253,7 +258,7 @@ export function ConnectionManager({
                 <code className="text-xs text-red-300 font-mono break-all">{disconnectCommand}</code>
               </div>
               <p className="text-xs text-slate-500">
-                Run this PowerShell command to close the tunnel, or simply close the PowerShell window.
+                This command is automatically executed when you toggle the connection OFF.
               </p>
             </div>
           )}
