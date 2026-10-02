@@ -4,15 +4,17 @@ import { ServerCard } from './components/ServerCard';
 import { ServerModal } from './components/ServerModal';
 import { FilterBar } from './components/FilterBar';
 import { StatsBar } from './components/StatsBar';
-import { ConnectionPanel } from './components/ConnectionPanel';
+import { ConnectionManager } from './components/ConnectionManager';
 import { HelpGuide } from './components/HelpGuide';
 import { ITAdminGuide } from './components/ITAdminGuide';
 import { useServers } from './hooks/useServers';
+import { useConnectionManager } from './hooks/useConnectionManager';
 import { Server, EnvironmentFilter, StatusFilter } from './types';
 import { ServerCrash } from 'lucide-react';
 
 function App() {
   const { servers, addServer, updateServer, deleteServer, checkStatus, checkAllStatuses } = useServers();
+  const connectionManager = useConnectionManager();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [envFilter, setEnvFilter] = useState<EnvironmentFilter>('all');
@@ -93,7 +95,10 @@ function App() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <StatsBar servers={servers} />
+        <StatsBar 
+          servers={servers} 
+          activeConnections={Object.values(connectionManager.connections).filter(c => c.active).length}
+        />
 
         <FilterBar
           envFilter={envFilter}
@@ -120,6 +125,8 @@ function App() {
                 onDelete={handleDelete}
                 onCheckStatus={checkStatus}
                 onConnect={handleConnect}
+                isConnected={connectionManager.isConnected(server.id)}
+                connectionActivatedAt={connectionManager.getConnection(server.id)?.activatedAt ?? null}
               />
             ))}
           </div>
@@ -164,9 +171,17 @@ function App() {
       />
 
       {connectServer && (
-        <ConnectionPanel
+        <ConnectionManager
           server={connectServer}
           onClose={() => setConnectServer(null)}
+          isConnected={connectionManager.isConnected(connectServer.id)}
+          onToggle={() => connectionManager.toggleConnection(connectServer)}
+          localPort={connectionManager.getConnection(connectServer.id)?.localPort || connectServer.operaPort || '80'}
+          onLocalPortChange={(port) => connectionManager.setLocalPort(connectServer.id, port)}
+          sshCommand={connectionManager.getSSHTunnelCommand(connectServer)}
+          disconnectCommand={connectionManager.getDisconnectCommand(connectServer)}
+          accessURL={connectionManager.getAccessURL(connectServer)}
+          activatedAt={connectionManager.getConnection(connectServer.id)?.activatedAt ?? null}
         />
       )}
 

@@ -1,11 +1,12 @@
 import { Server } from '../types';
-import { Monitor, Wifi, WifiOff, Wrench, Globe, HardDrive } from 'lucide-react';
+import { Monitor, Wifi, WifiOff, Wrench, Globe, HardDrive, Cable } from 'lucide-react';
 
 interface StatsBarProps {
   servers: Server[];
+  activeConnections?: number;
 }
 
-export function StatsBar({ servers }: StatsBarProps) {
+export function StatsBar({ servers, activeConnections = 0 }: StatsBarProps) {
   const online = servers.filter(s => s.status === 'online').length;
   const offline = servers.filter(s => s.status === 'offline').length;
   const maintenance = servers.filter(s => s.status === 'maintenance').length;
@@ -18,6 +19,13 @@ export function StatsBar({ servers }: StatsBarProps) {
       icon: HardDrive,
       color: 'text-blue-400',
       bg: 'bg-blue-500/10',
+    },
+    {
+      label: 'Active Tunnels',
+      value: activeConnections,
+      icon: Cable,
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10',
     },
     {
       label: 'Online',
@@ -41,15 +49,8 @@ export function StatsBar({ servers }: StatsBarProps) {
       bg: 'bg-amber-500/10',
     },
     {
-      label: 'Production',
-      value: prodCount,
-      icon: Monitor,
-      color: 'text-purple-400',
-      bg: 'bg-purple-500/10',
-    },
-    {
       label: 'Regions',
-      value: new Set(servers.map(s => s.region)).size,
+      value: new Set(servers.map(s => s.region).filter(Boolean)).size,
       icon: Globe,
       color: 'text-teal-400',
       bg: 'bg-teal-500/10',

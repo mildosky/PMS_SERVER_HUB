@@ -26,6 +26,8 @@ interface ServerCardProps {
   onDelete: (id: string) => void;
   onCheckStatus: (id: string) => void;
   onConnect: (server: Server) => void;
+  isConnected: boolean;
+  connectionActivatedAt: string | null;
 }
 
 const statusConfig = {
@@ -65,7 +67,7 @@ function formatLastChecked(dateStr: string | null): string {
   return `${diffDays}d ago`;
 }
 
-export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, onConnect }: ServerCardProps) {
+export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, onConnect, isConnected, connectionActivatedAt }: ServerCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const status = statusConfig[server.status];
@@ -73,6 +75,17 @@ export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, 
   const methodInfo = getConnectionMethodInfo(server.connectionMethod);
   const MethodIcon = methodIcons[server.connectionMethod] || Globe;
   const localURL = getLocalAccessURL(server);
+
+  const formatUptime = (timestamp: string | null) => {
+    if (!timestamp) return '';
+    const start = new Date(timestamp).getTime();
+    const now = Date.now();
+    const diff = now - start;
+    const hours = Math.floor(diff / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
 
   const handleCopyURL = () => {
     navigator.clipboard.writeText(localURL);
@@ -111,6 +124,14 @@ export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, 
           </div>
 
           <div className="flex items-center gap-2">
+            {server.connectionMethod === 'ssh-tunnel' && isConnected && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-md">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[10px] font-medium text-emerald-400">
+                  {formatUptime(connectionActivatedAt)}
+                </span>
+              </div>
+            )}
             <button
               onClick={handleCopyURL}
               className="p-1.5 text-slate-400 hover:text-slate-200 transition-colors"
@@ -120,10 +141,14 @@ export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, 
             </button>
             <button
               onClick={() => onConnect(server)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-medium transition-colors"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                isConnected
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white'
+              }`}
             >
               <Cable className="w-3 h-3" />
-              Connect
+              {isConnected ? 'Manage' : 'Connect'}
             </button>
           </div>
         </div>
@@ -211,10 +236,18 @@ export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, 
       {/* Connection Method Badge */}
       <div className={`flex items-center gap-2 p-2 rounded-lg border ${methodInfo.bgColor} mb-3`}>
         <MethodIcon className={`w-4 h-4 ${methodInfo.color}`} />
-        <div>
+        <div className="flex-1">
           <p className={`text-xs font-medium ${methodInfo.color}`}>{methodInfo.label}</p>
           <p className="text-[10px] text-slate-500">{methodInfo.description}</p>
         </div>
+        {server.connectionMethod === 'ssh-tunnel' && isConnected && (
+          <div className="flex items-center gap-1 px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-md">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] font-medium text-emerald-400">
+              {formatUptime(connectionActivatedAt)}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Details */}
@@ -252,10 +285,14 @@ export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, 
       <div className="flex items-center gap-2 pt-3 border-t border-slate-700/50">
         <button
           onClick={() => onConnect(server)}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition-colors shadow-lg shadow-blue-600/10"
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors shadow-lg ${
+            isConnected
+              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/10'
+              : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/10'
+          }`}
         >
           <Cable className="w-3.5 h-3.5" />
-          Connect
+          {isConnected ? 'Manage' : 'Connect'}
         </button>
         <button
           onClick={handleCopyURL}
