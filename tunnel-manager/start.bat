@@ -52,24 +52,19 @@ if not exist "node_modules\express" (
 )
 echo.
 
-:: Step 3: Check if frontend is built
-echo [3/4] Checking frontend...
-if not exist "..\index.html" (
-    echo       Frontend not built. Building now...
-    cd ..
-    call npm run build
-    if !ERRORLEVEL! NEQ 0 (
-        echo.
-        echo [ERROR] Frontend build failed!
-        echo.
-        pause
-        exit /b 1
-    )
-    echo       Frontend built successfully.
-    cd /d "%~dp0"
-) else (
-    echo       Frontend already built.
+:: Step 3: ALWAYS rebuild frontend to ensure latest code
+echo [3/4] Building frontend...
+cd ..
+call npm run build
+if !ERRORLEVEL! NEQ 0 (
+    echo.
+    echo [ERROR] Frontend build failed!
+    echo.
+    pause
+    exit /b 1
 )
+echo       Frontend built successfully.
+cd /d "%~dp0"
 echo.
 
 :: Step 4: Check if port 3001 is already in use
