@@ -105,7 +105,9 @@ export function ServerCard({ server, viewMode, onEdit, onDelete, onCheckStatus, 
                 {methodInfo.label}
               </span>
             </div>
-            <p className="text-xs text-slate-400 truncate">{server.property} • {server.operaHost}:{server.operaPort}</p>
+            <p className="text-xs text-slate-400 truncate">
+              {server.property} • {server.operaHost}{server.operaPort ? `:${server.operaPort}` : ''}
+            </p>
           </div>
 
           <div className="flex items-center gap-2">

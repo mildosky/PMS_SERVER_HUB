@@ -29,11 +29,11 @@ function App() {
       const query = searchQuery.toLowerCase();
       const matchesSearch =
         !query ||
-        server.name.toLowerCase().includes(query) ||
-        server.property.toLowerCase().includes(query) ||
-        server.operaHost.toLowerCase().includes(query) ||
-        server.region.toLowerCase().includes(query) ||
-        server.tags.some(tag => tag.toLowerCase().includes(query));
+        (server.name || '').toLowerCase().includes(query) ||
+        (server.property || '').toLowerCase().includes(query) ||
+        (server.operaHost || '').toLowerCase().includes(query) ||
+        (server.region || '').toLowerCase().includes(query) ||
+        (server.tags || []).some(tag => (tag || '').toLowerCase().includes(query));
 
       const matchesEnv = envFilter === 'all' || server.environment === envFilter;
       const matchesStatus = statusFilter === 'all' || server.status === statusFilter;
