@@ -70,12 +70,53 @@ app.post('/api/tunnel/start', (req, res) => {
     // Build command arguments
     const args = parts.slice(sshIndex + 1);
 
-    // Spawn SSH process (hidden window on Windows)
-    const sshProcess = spawn('ssh', args, {
-      windowsHide: true,
-      detached: false,
-      stdio: 'ignore'
-    });
+    // Spawn SSH process in a visible terminal window for password entry
+    // On Windows, use cmd.exe /c start to open a new visible window
+    let sshProcess;
+    
+    if (process.platform === 'win32') {
+      // Windows: Open SSH in a new visible command window
+      const sshCommand = `ssh ${args.join(' ')}`;
+      sshProcess = spawn('cmd.exe', ['/c', 'start', 'Opera SSH Tunnel', 'cmd.exe', '/k', sshCommand], {
+        windowsHide: false,
+        detached: true
+      });
+      
+      // Since we used cmd.exe /c start, the actual SSH process is a child
+      // We need to track it differently - find the SSH process by looking for recent cmd.exe with SSH
+      console.log(`[INFO] Opening SSH tunnel in visible window for ${serverId}`);
+      console.log(`[INFO] Command: ${sshCommand}`);
+      console.log(`[INFO] Please enter your password in the new window if prompted`);
+      
+      // Give it a moment to start, then we'll consider it active
+      setTimeout(() => {
+        // Mark as active even though we can't track the exact SSH PID
+        updateState(serverId, true);
+      }, 1000);
+      
+      // Store a reference (we won't be able to kill it cleanly, but that's okay)
+      activeTunnels.set(serverId, {
+        process: sshProcess,
+        pid: sshProcess.pid,
+        startedAt: new Date().toISOString(),
+        localPort,
+        operaHost,
+        operaPort,
+        visibleWindow: true
+      });
+      
+      return res.json({ 
+        success: true, 
+        pid: sshProcess.pid,
+        message: 'Tunnel started in visible window. Please enter password if prompted.'
+      });
+    } else {
+      // Linux/Mac: Spawn with inherited stdio so password prompt works
+      sshProcess = spawn('ssh', args, {
+        detached: true,
+        stdio: 'inherit'
+      });
+    }
 
     // Store process reference
     activeTunnels.set(serverId, {
@@ -126,14 +167,23 @@ app.post('/api/tunnel/stop', (req, res) => {
   }
 
   try {
-    // Kill the process
-    tunnel.process.kill('SIGTERM');
-    
-    // Also try to kill by PID (in case process tree)
-    if (process.platform === 'win32') {
-      spawn('taskkill', ['/pid', tunnel.pid, '/f', '/t'], { windowsHide: true });
+    if (process.platform === 'win32' && tunnel.visibleWindow) {
+      // Windows visible window: Kill by window title
+      console.log(`[INFO] Closing SSH tunnel window for ${serverId}`);
+      spawn('taskkill', ['/fi', 'windowtitle eq "Opera SSH Tunnel"', '/f'], { windowsHide: true });
+      
+      // Also try to kill any SSH processes that might be running
+      spawn('taskkill', ['/im', 'ssh.exe', '/f'], { windowsHide: true });
     } else {
-      spawn('kill', ['-9', tunnel.pid]);
+      // Normal process kill
+      tunnel.process.kill('SIGTERM');
+      
+      // Also try to kill by PID (in case process tree)
+      if (process.platform === 'win32') {
+        spawn('taskkill', ['/pid', tunnel.pid, '/f', '/t'], { windowsHide: true });
+      } else {
+        spawn('kill', ['-9', tunnel.pid]);
+      }
     }
 
     activeTunnels.delete(serverId);
