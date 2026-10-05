@@ -55,7 +55,21 @@ echo.
 :: Step 3: ALWAYS rebuild frontend to ensure latest code
 echo [3/4] Building frontend...
 cd ..
-call npm run build
+
+:: Check if root dependencies are installed
+if not exist "node_modules\vite" (
+    echo       Installing root dependencies...
+    call npm install
+    if !ERRORLEVEL! NEQ 0 (
+        echo.
+        echo [ERROR] Failed to install root dependencies
+        echo.
+        pause
+        exit /b 1
+    )
+)
+
+call npx vite build
 if !ERRORLEVEL! NEQ 0 (
     echo.
     echo [ERROR] Frontend build failed!
