@@ -2,6 +2,7 @@
   "name": "opera-pms-server-hub",
   "version": "1.0.0",
   "description": "Opera PMS v5 Server Hub - Standalone Desktop Application",
+  "author": "Musah Ibrahim",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
