@@ -71,139 +71,40 @@ app.post('/api/tunnel/start', (req, res) => {
     const args = parts.slice(sshIndex + 1);
 
     // Spawn SSH process in a visible terminal window for password entry
-    // On Windows, use cmd.exe /c start to open a new visible window
     let sshProcess;
     
     if (process.platform === 'win32') {
-      // Windows: Check if plink (PuTTY) is available for background operation
-      const plinkCheck = spawn('where', ['plink'], { windowsHide: true });
-      
-      plinkCheck.on('close', (code) => {
-        if (code === 0) {
-          // plink is available - use it for fully background operation
-          console.log(`[INFO] Using plink for background SSH tunnel (no visible window)`);
-          
-          // Create PowerShell script to prompt for password and run plink hidden
-          const psScript = `
-$password = Read-Host -AsSecureString "Enter SSH password for ${args[args.length - 2]}"
-$bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
-$plainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-
-# Convert SSH command to plink format
-# ssh -N -L localPort:host:remotePort user@host -p port
-# plink -batch -N -L localPort:host:remotePort user@host -P port -pw password
-$plinkArgs = "-batch -N ${args.filter(a => a !== '-p').join(' ').replace('-p', '-P')} -pw $plainPassword"
-
-# Run plink completely hidden
-$process = Start-Process -FilePath "plink" -ArgumentList $plinkArgs -WindowStyle Hidden -PassThru
-Write-Host "SSH tunnel started in background (PID: $($process.Id))" -ForegroundColor Green
-Write-Host "You can close this window now." -ForegroundColor Cyan
-Start-Sleep -Seconds 3
-`;
-          
-          const scriptPath = path.join(__dirname, `temp_plink_${serverId}.ps1`);
-          fs.writeFileSync(scriptPath, psScript);
-          
-          sshProcess = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', scriptPath], {
-            windowsHide: false,
-            detached: true
-          });
-          
-          console.log(`[INFO] Password prompt will appear for ${serverId}`);
-          
-          // Clean up temp script after 60 seconds
-          setTimeout(() => {
-            try {
-              if (fs.existsSync(scriptPath)) fs.unlinkSync(scriptPath);
-            } catch (e) {}
-          }, 60000);
-          
-          setTimeout(() => updateState(serverId, true), 2000);
-          
-          activeTunnels.set(serverId, {
-            process: sshProcess,
-            pid: sshProcess.pid,
-            startedAt: new Date().toISOString(),
-            localPort,
-            operaHost,
-            operaPort,
-            visibleWindow: true,
-            scriptPath: scriptPath,
-            usingPlink: true
-          });
-          
-          res.json({ 
-            success: true, 
-            pid: sshProcess.pid,
-            message: 'Password prompt will appear. After entering password, tunnel runs in background.'
-          });
-        } else {
-          // plink not available - use visible SSH window with auto-minimize
-          console.log(`[INFO] plink not found, using visible SSH window`);
-          console.log(`[INFO] Tip: Install PuTTY for fully background operation`);
-          
-          const sshCommand = `ssh ${args.join(' ')}`;
-          
-          // Create PowerShell script that runs SSH in minimized window
-          const psScript = `
-Write-Host "Starting SSH tunnel..." -ForegroundColor Cyan
-Write-Host "Window will minimize in 5 seconds. You can minimize it now if needed." -ForegroundColor Yellow
-Write-Host ""
-Start-Sleep -Seconds 1
-
-# Run SSH - it will prompt for password
-${sshCommand}
-`;
-          
-          const scriptPath = path.join(__dirname, `temp_ssh_${serverId}.ps1`);
-          fs.writeFileSync(scriptPath, psScript);
-          
-          sshProcess = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-NoExit', '-File', scriptPath], {
-            windowsHide: false,
-            detached: true
-          });
-          
-          console.log(`[INFO] Opening SSH tunnel window for ${serverId}`);
-          console.log(`[INFO] Command: ${sshCommand}`);
-          
-          // Auto-minimize after 5 seconds using PowerShell
-          setTimeout(() => {
-            try {
-              spawn('powershell.exe', [
-                '-Command',
-                `(New-Object -ComObject Shell.Application).MinimizeAll()`
-              ], { windowsHide: true });
-            } catch (e) {}
-          }, 5000);
-          
-          setTimeout(() => {
-            try {
-              if (fs.existsSync(scriptPath)) fs.unlinkSync(scriptPath);
-            } catch (e) {}
-          }, 60000);
-          
-          setTimeout(() => updateState(serverId, true), 2000);
-          
-          activeTunnels.set(serverId, {
-            process: sshProcess,
-            pid: sshProcess.pid,
-            startedAt: new Date().toISOString(),
-            localPort,
-            operaHost,
-            operaPort,
-            visibleWindow: true,
-            scriptPath: scriptPath
-          });
-          
-          res.json({ 
-            success: true, 
-            pid: sshProcess.pid,
-            message: 'SSH window opened. Enter password, then window will auto-minimize.'
-          });
-        }
+      // Windows: Open SSH in a visible command window
+      const sshCommand = `ssh ${args.join(' ')}`;
+      sshProcess = spawn('cmd.exe', ['/c', 'start', 'Opera SSH Tunnel', 'cmd.exe', '/k', sshCommand], {
+        windowsHide: false,
+        detached: true
       });
       
-      return; // Important: return here since we're handling response in callback
+      console.log(`[INFO] Opening SSH tunnel in visible window for ${serverId}`);
+      console.log(`[INFO] Command: ${sshCommand}`);
+      console.log(`[INFO] Please enter your password in the new window if prompted`);
+      
+      // Give it a moment to start, then we'll consider it active
+      setTimeout(() => {
+        updateState(serverId, true);
+      }, 1000);
+      
+      activeTunnels.set(serverId, {
+        process: sshProcess,
+        pid: sshProcess.pid,
+        startedAt: new Date().toISOString(),
+        localPort,
+        operaHost,
+        operaPort,
+        visibleWindow: true
+      });
+      
+      return res.json({ 
+        success: true, 
+        pid: sshProcess.pid,
+        message: 'Tunnel started in visible window. Please enter password if prompted.'
+      });
     } else {
       // Linux/Mac: Spawn with inherited stdio so password prompt works
       sshProcess = spawn('ssh', args, {
@@ -261,26 +162,23 @@ app.post('/api/tunnel/stop', (req, res) => {
   }
 
   try {
-    if (process.platform === 'win32') {
-      if (tunnel.usingPlink) {
-        // Kill plink process
-        console.log(`[INFO] Stopping plink tunnel for ${serverId}`);
-        spawn('taskkill', ['/im', 'plink.exe', '/f'], { windowsHide: true });
-      } else {
-        // Kill SSH process and any related windows
-        console.log(`[INFO] Stopping SSH tunnel for ${serverId}`);
-        spawn('taskkill', ['/im', 'ssh.exe', '/f'], { windowsHide: true });
-        spawn('taskkill', ['/im', 'powershell.exe', '/fi', 'windowtitle eq "Opera SSH Tunnel"', '/f'], { windowsHide: true });
-      }
+    if (process.platform === 'win32' && tunnel.visibleWindow) {
+      // Windows visible window: Kill by window title
+      console.log(`[INFO] Closing SSH tunnel window for ${serverId}`);
+      spawn('taskkill', ['/fi', 'windowtitle eq "Opera SSH Tunnel"', '/f'], { windowsHide: true });
       
-      // Also kill by PID if we have it
-      if (tunnel.pid) {
-        spawn('taskkill', ['/pid', tunnel.pid, '/f', '/t'], { windowsHide: true });
-      }
+      // Also try to kill any SSH processes that might be running
+      spawn('taskkill', ['/im', 'ssh.exe', '/f'], { windowsHide: true });
     } else {
-      // Normal process kill for Linux/Mac
+      // Normal process kill
       tunnel.process.kill('SIGTERM');
-      spawn('kill', ['-9', tunnel.pid]);
+      
+      // Also try to kill by PID (in case process tree)
+      if (process.platform === 'win32') {
+        spawn('taskkill', ['/pid', tunnel.pid, '/f', '/t'], { windowsHide: true });
+      } else {
+        spawn('kill', ['-9', tunnel.pid]);
+      }
     }
 
     activeTunnels.delete(serverId);
