@@ -75,7 +75,17 @@ echo.
 echo [5/5] Building standalone .exe...
 echo       This may take several minutes...
 echo.
-call npx electron-builder --win portable
+
+:: Clear cached code signing tools that cause permission errors
+echo       Cleaning cached build tools...
+if exist "%LOCALAPPDATA%\electron-builder\Cache\winCodeSign" (
+    rmdir /s /q "%LOCALAPPDATA%\electron-builder\Cache\winCodeSign" 2>nul
+)
+
+:: Skip code signing to avoid permission issues
+set CSC_IDENTITY_AUTO_DISCOVERY=false
+
+call npx electron-builder --win portable --config.win.sign=null
 if !ERRORLEVEL! NEQ 0 (
     echo.
     echo [ERROR] Build failed!
