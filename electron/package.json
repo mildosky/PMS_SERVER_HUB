@@ -1,0 +1,61 @@
+{
+  "name": "opera-pms-server-hub",
+  "version": "1.0.0",
+  "description": "Opera PMS v5 Server Hub - Standalone Desktop Application",
+  "author": "Musah Ibrahim",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "build:portable": "electron-builder --win portable",
+    "build:installer": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.operapms.serverhub",
+    "productName": "Opera PMS Server Hub",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "server.js",
+      "index.html",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "signAndEditExecutable": false,
+      "forceCodeSigning": false
+    },
+    "portable": {
+      "artifactName": "OperaPMS-ServerHub-Portable.exe",
+      "requestExecutionLevel": "user"
+    },
+    "nsis": {
+      "oneClick": true,
+      "artifactName": "OperaPMS-ServerHub-Setup.exe"
+    },
+    "extraResources": [
+      {
+        "from": "../index.html",
+        "to": "index.html"
+      }
+    ]
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}
