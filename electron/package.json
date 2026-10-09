@@ -33,7 +33,6 @@
       ],
       "icon": "assets/icon.png",
       "signAndEditExecutable": false,
-      "sign": null,
       "forceCodeSigning": false
     },
     "portable": {

@@ -85,7 +85,7 @@ if exist "%LOCALAPPDATA%\electron-builder\Cache\winCodeSign" (
 :: Skip code signing to avoid permission issues
 set CSC_IDENTITY_AUTO_DISCOVERY=false
 
-call npx electron-builder --win portable --config.win.sign=null
+call npx electron-builder --win portable
 if !ERRORLEVEL! NEQ 0 (
     echo.
     echo [ERROR] Build failed!
